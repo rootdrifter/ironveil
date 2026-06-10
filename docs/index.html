@@ -367,9 +367,91 @@
     .layer-threat { border: none; }
     footer { flex-direction: column; gap: 0.5rem; }
   }
+
+  /* ====================== PORTFOLIO NAV (shared component) ====================== */
+  body { padding-top: 40px; }
+  .pnav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 40px;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 1.25rem;
+    z-index: 1000;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+  .pnav a { text-decoration: none; }
+  .pnav-hub { color: var(--accent); white-space: nowrap; }
+  .pnav-hub .short { display: none; }
+  .pnav-links { display: flex; gap: 1.1rem; }
+  .pnav-links a { color: var(--muted); transition: color 0.15s; }
+  .pnav-links a:hover { color: var(--accent); }
+  .pnav-links a.active { color: var(--accent); }
+  .pnav-toggle {
+    display: none;
+    background: none;
+    border: 1px solid var(--border-bright);
+    color: var(--muted);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    padding: 0.15rem 0.55rem;
+    cursor: pointer;
+  }
+  @media (max-width: 768px) {
+    .pnav-hub .long { display: none; }
+    .pnav-hub .short { display: inline; }
+    .pnav-toggle { display: block; }
+    .pnav-links {
+      display: none;
+      position: absolute;
+      top: 40px; left: 0; right: 0;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      flex-direction: column;
+      gap: 0;
+      padding: 0.25rem 0;
+    }
+    .pnav-links.open { display: flex; }
+    .pnav-links a { padding: 0.6rem 1.25rem; }
+  }
+
+  .footer-nav {
+    margin-top: 1rem;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem 0.7rem;
+  }
+  .footer-nav a { color: var(--muted); text-decoration: none; }
+  .footer-nav a:hover { color: var(--accent); }
+  .footer-nav .fsep { color: var(--border-bright); }
 </style>
 </head>
 <body>
+<nav class="pnav" aria-label="Portfolio">
+  <a class="pnav-hub" href="https://rootdrifter.github.io/"><span class="long">&larr; ROOTDRIFTER</span><span class="short">&larr; HUB</span></a>
+  <button class="pnav-toggle" id="pnavToggle" aria-expanded="false" aria-controls="pnavLinks">&#9776; REPOS</button>
+  <div class="pnav-links" id="pnavLinks">
+    <a href="https://rootdrifter.github.io/ironveil/" class="active" aria-current="page">IRONVEIL</a>
+    <a href="https://rootdrifter.github.io/nullbyte/">NULLBYTE</a>
+    <a href="https://rootdrifter.github.io/spectre/">SPECTRE</a>
+    <a href="https://rootdrifter.github.io/oracle/">ORACLE</a>
+    <a href="https://rootdrifter.github.io/mirage/">MIRAGE</a>
+    <a href="https://rootdrifter.github.io/gauntlet/">GAUNTLET</a>
+  </div>
+</nav>
+
 <div class="container">
 
   <header>
@@ -616,6 +698,35 @@
     <span>rev 2026-06-10</span>
   </footer>
 
+  <div class="footer-nav">
+    <a href="https://rootdrifter.github.io/">&larr; HUB</a>
+    <span class="fsep">&middot;</span>
+    <a href="https://rootdrifter.github.io/ironveil/">IRONVEIL</a>
+    <span class="fsep">&middot;</span>
+    <a href="https://rootdrifter.github.io/nullbyte/">NULLBYTE</a>
+    <span class="fsep">&middot;</span>
+    <a href="https://rootdrifter.github.io/spectre/">SPECTRE</a>
+    <span class="fsep">&middot;</span>
+    <a href="https://rootdrifter.github.io/oracle/">ORACLE</a>
+    <span class="fsep">&middot;</span>
+    <a href="https://rootdrifter.github.io/mirage/">MIRAGE</a>
+    <span class="fsep">&middot;</span>
+    <a href="https://rootdrifter.github.io/gauntlet/">GAUNTLET</a>
+    <span class="fsep">&middot;</span>
+    <span>WATCHTOWER (COMING)</span>
+  </div>
+
+
 </div>
+<script>
+(function () {
+  var t = document.getElementById('pnavToggle'), l = document.getElementById('pnavLinks');
+  if (!t || !l) return;
+  t.addEventListener('click', function () {
+    var open = l.classList.toggle('open');
+    t.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+})();
+</script>
 </body>
 </html>
