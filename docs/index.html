@@ -31,8 +31,27 @@
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="IRONVEIL — Hardened Workstation Build">
 <meta name="twitter:description" content="LUKS2 FDE + Nitrokey FIDO2 unlock, dracut-sshd remote unlock, WireGuard, AdGuard Home — documented defensive engineering.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow:wght@300;400;600&display=swap" rel="stylesheet">
 <style>
+  .skip-link {
+    position: fixed;
+    left: -9999px;
+    top: 0.5rem;
+    z-index: 1100;
+    background: var(--surface);
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    padding: 0.5rem 1rem;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    text-decoration: none;
+  }
+  .skip-link:focus { left: 0.5rem; }
+
   :root {
     --bg: #090d12;
     --surface: #0d1520;
@@ -491,6 +510,7 @@
 </style>
 </head>
 <body>
+<a class="skip-link" href="#content">Skip to content</a>
 <nav class="pnav" aria-label="Portfolio">
   <a class="pnav-hub" href="https://rootdrifter.github.io/"><span class="long">&larr; ROOTDRIFTER</span><span class="short">&larr; HUB</span></a>
   <button class="pnav-toggle" id="pnavToggle" aria-expanded="false" aria-controls="pnavLinks">&#9776; REPOS</button>
@@ -504,7 +524,7 @@
   </div>
 </nav>
 
-<div class="container">
+<div class="container" id="content">
 
   <header>
     <div class="sys-label">// HARDENED WORKSTATION — PORTFOLIO BUILD</div>
