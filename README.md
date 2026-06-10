@@ -209,3 +209,7 @@ not present on the machine in any form.
 | Defence in depth | Each threat mapped to a compensating control; no single point of failure |
 | Operational security | Vendor cloud daemons eliminated; RGB via OpenRGB without telemetry |
 | Remote operations | SSH-based unlock from GrapheneOS; no physical presence required for boot |
+
+---
+
+*Part of the [rootdrifter](https://github.com/rootdrifter) security portfolio — built and maintained by a security-cleared candidate. UK-issued clearance held now, not pending vetting: deployable to cleared work from day one.*
