@@ -12,6 +12,11 @@
 ---
 
 ### 1. crypttab entry
+**What this enables:** confirms the real at-rest cryptography (cipher, key size, active keyslots)
+and the live unlock options — turning the documented LUKS2/Argon2id defaults into machine-attested
+fact a reviewer can trust. **Expected format:** one `crypttab` line; `luksDump` reporting
+`aes-xts-plain64`, 512-bit key, 3 active keyslots.
+
 Run on war-horse:
 ```
 cat /etc/crypttab
@@ -33,6 +38,11 @@ Update: `hardening/luks2-setup.md` — **cipher** placeholder at **line 12**.
 ---
 
 ### 2. dracut-sshd config
+**What this enables:** proves the pre-boot remote-unlock network path (the standout control) is real
+and reproducible, and pins the exact package source + version for auditability. **Expected format:**
+the `dracut.conf.d` drop-in lines + the `ip=` directive from `/proc/cmdline`; COPR repo name +
+`rpm -q dracut-sshd` version string.
+
 Run on war-horse:
 ```
 cat /etc/dracut.conf.d/*.conf
@@ -49,6 +59,11 @@ repo and the installed `dracut-sshd` version (`rpm -q dracut-sshd` / `dnf info d
 ---
 
 ### 3. WireGuard config excerpt (sanitised)
+**What this enables:** substantiates the named-tunnel (`wg-SE-RO-1`) and kill-switch claims with real,
+secret-redacted config — showing egress is genuinely tunnel-bound rather than asserted. **Expected
+format:** `[Interface]`/`[Peer]` sections with `Endpoint`, `AllowedIPs`, interface name; `PrivateKey`
+and `PresharedKey` shown as `[REDACTED]`; plus the dispatcher/nftables kill-switch rule.
+
 Run on war-horse:
 ```
 sudo cat /etc/NetworkManager/system-connections/wg-*.nmconnection
@@ -70,6 +85,11 @@ egress rule that drops traffic when `wg-SE-RO-1` is down.
 ---
 
 ### 4. AdGuard Home DNS upstream
+**What this enables:** proves DNS is filtered and bound to loopback before egress (no plaintext leak),
+backing the DNS-security layer with the actual upstream + blocklists in use. **Expected format:** the
+`upstream_dns:` value (confirm `10.2.0.1` over the tunnel) and the enabled blocklist *names* only — no
+auth tokens; plus the DNS-leak-test result (date + service).
+
 From the AdGuard Home admin UI: **Settings → DNS settings → Upstream DNS** (and **Filters → DNS
 blocklists**). Equivalent on disk: the `upstream_dns:` and `filters:` sections of `AdGuardHome.yaml`.
 Paste the upstream config + enabled blocklist names below (no auth tokens):
