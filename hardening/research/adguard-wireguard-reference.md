@@ -104,7 +104,7 @@ WireGuard's handshake is an instantiation of the **Noise framework**, specifical
   are generated per handshake.
 - **psk2:** an *optional* pre-shared symmetric key mixed in as a second factor — this is the field
   used for post-quantum hardening (a shared secret an attacker would also need even if they broke
-  the Curve25519 ECDH). *Verify whether IRONVEIL configures a PSK on `wg-SE-RO-1`.*
+  the Curve25519 ECDH). *Verify whether IRONVEIL configures a PSK on `wg-CH-FI-2`.*
 - The handshake provides mutual authentication, forward secrecy (via the per-session ephemeral
   keys), and identity hiding for the initiator.
 
@@ -138,7 +138,7 @@ revision rather than a config toggle — an acceptable trade for the reduced att
 
 ## 4. NetworkManager integration vs `wg-quick`
 
-IRONVEIL manages the tunnel `wg-SE-RO-1` as a **NetworkManager** connection rather than via
+IRONVEIL manages the tunnel `wg-CH-FI-2` as a **NetworkManager** connection rather than via
 `wg-quick`.
 
 | Aspect | `wg-quick` | NetworkManager |
@@ -157,7 +157,7 @@ IRONVEIL manages the tunnel `wg-SE-RO-1` as a **NetworkManager** connection rath
   `systemd-resolved` system.
 - **Persistence / autoconnect.** NM can bring the tunnel up automatically and keep it up across
   roaming, rather than depending on a separately-enabled `wg-quick@` unit.
-- **Readability of multi-tunnel setups.** Named connections (`wg-SE-RO-1` encoding region/role)
+- **Readability of multi-tunnel setups.** Named connections (`wg-CH-FI-2` encoding region/role)
   are managed uniformly via `nmcli`.
 
 ### 4.2 Kill-switch
@@ -168,7 +168,7 @@ no app traffic). Implementations:
 - **Routing-based (wg-quick style):** `AllowedIPs = 0.0.0.0/0, ::/0` plus a separate routing table
   and a `fwmark` so that any packet not going through the tunnel is dropped. wg-quick automates
   this with its `Table`/`PostUp` rules.
-- **Firewall-based:** an `nftables`/`firewalld` policy that permits egress only on the `wg-SE-RO-1`
+- **Firewall-based:** an `nftables`/`firewalld` policy that permits egress only on the `wg-CH-FI-2`
   interface (and to the WireGuard endpoint itself), dropping everything on the physical interface
   except what is needed to (re)establish the tunnel.
 - **NM dispatcher script:** a script in `/etc/NetworkManager/dispatcher.d/` that reacts to the
@@ -210,7 +210,7 @@ systemd-resolved   DNS=127.0.0.1, Domains=~., DNSStubListener=no
 AdGuard Home  (bound 127.0.0.1:53 — never leaves host unfiltered)
    │  upstream = 10.2.0.1
    ▼
-WireGuard wg-SE-RO-1  (query encrypted inside the tunnel)
+WireGuard wg-CH-FI-2  (query encrypted inside the tunnel)
    ▼
 upstream resolver 10.2.0.1  (sees the tunnel exit IP, never the host IP, never plaintext on the LAN)
 ```
@@ -233,7 +233,7 @@ The specific properties that close each leak vector:
   `resolved` is not handing out a v6 link resolver. Otherwise v6 queries can bypass the v4 path.
 - **App-embedded DoH (vector 4):** browsers/apps with their own DoH must be disabled or their DoH
   endpoints blocked at the firewall, or they bypass AdGuard entirely.
-- **Pre-tunnel boot window:** before `wg-SE-RO-1` is up, AdGuard's upstream is unreachable —
+- **Pre-tunnel boot window:** before `wg-CH-FI-2` is up, AdGuard's upstream is unreachable —
   confirm the kill-switch prevents fallback to a plaintext LAN resolver during that window.
 
 ### 5.4 Verification
@@ -242,7 +242,7 @@ The specific properties that close each leak vector:
 resolvectl status                      # DNS=127.0.0.1 active on the right link; no LAN resolver listed
 sudo ss -ulpn 'sport = :53'            # only AdGuard bound to 127.0.0.1:53; resolved stub absent
 resolvectl query example.com           # resolves via 127.0.0.1 → AdGuard
-wg show wg-SE-RO-1                      # tunnel up, recent handshake, expected peer/endpoint
+wg show wg-CH-FI-2                      # tunnel up, recent handshake, expected peer/endpoint
 # external DNS-leak test service → should show only the WireGuard exit, no ISP resolver
 # IPv6 check: ensure no v6 resolver is offered and v6 egress is tunnelled or disabled
 ```
@@ -253,7 +253,7 @@ wg show wg-SE-RO-1                      # tunnel up, recent handshake, expected 
 
 - [ ] Whether the upstream hop to `10.2.0.1` is plain DNS over the tunnel or DoH/DoT over the
       tunnel (defence-in-depth).
-- [ ] Whether `wg-SE-RO-1` uses a WireGuard PSK (`Noise_IKpsk2` second factor / PQ hardening).
+- [ ] Whether `wg-CH-FI-2` uses a WireGuard PSK (`Noise_IKpsk2` second factor / PQ hardening).
 - [ ] The exact kill-switch implementation (nftables egress-lock recommended) and its boot-window
       behaviour.
 - [ ] IPv6 handling end-to-end (tunnelled or disabled; no v6 resolver leak).

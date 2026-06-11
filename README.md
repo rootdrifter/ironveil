@@ -47,7 +47,8 @@ eliminates a specific attack path — not because it adds capability.
 
 ### LUKS2 Full-Disk Encryption
 
-Encrypted volume: `/dev/sda3`
+Encrypted volume: LUKS2 container UUID `6cbc50ba-6f8a-4932-abfc-f2d0504a29b3`, mapped as
+`luks-6cbc50ba-6f8a-4932-abfc-f2d0504a29b3` (`aes-xts-plain64`, 512-bit key).
 
 Three keyslots configured:
 
@@ -84,8 +85,9 @@ before the LUKS2 volume is mounted.
 1. Machine powers on and reaches the initramfs SSH listener
 2. GrapheneOS (Termux) connects via `ssh unlock@$IRONVEIL_IP`
 3. The Termux ed25519 public key is baked into the initramfs authorized\_keys at build time
-4. Authenticated session allows `systemd-cryptsetup@sda3` to be triggered, supplying the
-   LUKS2 passphrase over the encrypted channel
+4. Authenticated session drives the LUKS2 unlock over the encrypted channel (the initramfs
+   `fido2` module lets a Nitrokey touch satisfy the prompt; `systemd-tty-ask-password-agent`
+   relays it)
 5. Volume unlocks; boot continues to userspace
 
 The ed25519 key baked into the initramfs is separate from all other SSH keys and is rotated
@@ -100,29 +102,33 @@ pinned on the GrapheneOS client to prevent MITM substitution during unlock.
   Termux key file (something you have, separately)
 - An attacker with network access but not the GrapheneOS device cannot complete the unlock
 
-### WireGuard VPN — wg-SE-RO-1
+### WireGuard VPN — wg-CH-FI-2 and wg-SE-FI-1
 
-- **Interface:** `wg-SE-RO-1` (replaces legacy `wg0`)
-- **Management:** NetworkManager — the tunnel is treated as a first-class network connection,
-  enabling persistent roaming and DNS integration
-- **Routing:** All external traffic routed through the tunnel; kill-switch rule drops traffic
-  if the interface drops
-
-The rename from `wg0` to `wg-SE-RO-1` reflects a move to a named-tunnel model where the
-identifier encodes the endpoint region, making multi-tunnel configurations readable.
+- **Interfaces:** two NetworkManager tunnels, `wg-CH-FI-2` and `wg-SE-FI-1` (named-tunnel model,
+  replacing the legacy `wg0`); the identifier encodes the endpoint region for multi-tunnel
+  readability
+- **Management:** NetworkManager — each tunnel is a first-class connection. Activation is
+  **manual** (`autoconnect=false`)
+- **Routing:** both carry full-tunnel `AllowedIPs` (`0.0.0.0/0, ::/0`), so while one is up it is
+  the default route for all traffic — a *route-based* (implicit) kill-switch rather than a separate
+  fail-closed rule (see [hardening/network-stack.md](hardening/network-stack.md) for the honest
+  caveat and the planned hard kill-switch)
 
 ### AdGuard Home DNS Filtering
 
-- **Upstream DNS:** WireGuard peer at `10.2.0.1` — DNS queries traverse the encrypted tunnel
-  before reaching a resolver
-- **Listener:** `127.0.0.1:53` — no DNS traffic leaves the host unfiltered
-- **Block lists:** Standard tracking, malware, and telemetry lists enabled
-- **systemd-resolved:** Configured to forward all queries to `127.0.0.1` — AdGuard Home
-  intercepts before anything reaches the upstream
+- **Upstream DNS:** **Quad9 over DNS-over-HTTPS** (`https://dns10.quad9.net/dns-query`) — every
+  query leaves AdGuard already encrypted, then egresses through the active WireGuard tunnel. (The
+  VPN provider also pushes `10.2.0.1`, but AdGuard overrides it.)
+- **Listener:** `*:53` (pid 1452) — AdGuard is the system resolver. The no-plaintext-egress
+  property comes from the DoH-over-tunnel upstream, not from a loopback bind.
+- **Block list:** AdGuard DNS filter (`filter_1.txt`) enabled
+- **systemd-resolved:** forwards all queries to `127.0.0.1` (stub listener off) — AdGuard owns
+  port 53 and intercepts before anything reaches the upstream
 
-The DNS chain: application → systemd-resolved (loopback) → AdGuard Home → WireGuard →
-upstream resolver. An attacker observing the external interface sees only WireGuard-encrypted
-traffic; the upstream resolver sees the WireGuard exit IP, not the host IP.
+The DNS chain: application → systemd-resolved (127.0.0.1) → AdGuard Home (:53) → Quad9 DoH
+(encrypted) → egress via the active WireGuard tunnel. An attacker observing the external interface
+sees only WireGuard-encrypted traffic; the upstream resolver sees the WireGuard exit IP, not the
+host IP, and never a plaintext query.
 
 ### OpenRGB Peripheral Configuration
 
@@ -163,11 +169,11 @@ DNS layer:        AdGuard + systemd-resolved — no plaintext queries
 | Layer | Mechanism | Threat mitigated |
 |-------|-----------|------------------|
 | Physical | Nitrokey 3A NFC FIDO2, touch-only enrollment (firmware 1.8.3, no clientPin) | Remote/unattended hardware-key activation; unlock without physical presence |
-| Disk | LUKS2 volume on `/dev/sda3` with Argon2id KDF | Offline disk clone and brute-force key derivation |
+| Disk | LUKS2 `aes-xts-plain64`/512-bit (UUID `6cbc50ba-…`) with Argon2id passphrase slot | Offline disk clone and brute-force key derivation |
 | Boot | dracut-sshd pre-boot SSH with pinned ed25519 host key | Unattended unlock without exposing the passphrase; MITM key substitution during unlock |
-| Key custody | NK#1 primary slot, NK#2 offline backup slot, offline emergency passphrase | Single point of key failure; primary key loss or seizure |
-| Network | WireGuard `wg-SE-RO-1` (NetworkManager-managed) with kill-switch | Traffic interception, geolocation, and leakage if the tunnel drops |
-| DNS | AdGuard Home on `127.0.0.1:53` + systemd-resolved loopback binding; upstream via `10.2.0.1` over WireGuard | Plaintext DNS leakage; tracker, telemetry, and known-malicious domain resolution |
+| Key custody | Primary Nitrokey slot, backup Nitrokey offline slot, offline emergency passphrase | Single point of key failure; primary key loss or seizure |
+| Network | WireGuard `wg-CH-FI-2` / `wg-SE-FI-1` (NetworkManager, manual) with full-tunnel routing | Traffic interception, geolocation, and leakage if the tunnel drops |
+| DNS | AdGuard Home on `*:53` → Quad9 DoH over the active tunnel; systemd-resolved forwards to it | Plaintext DNS leakage; tracker, telemetry, and known-malicious domain resolution |
 
 The hardware key is the root of the trust chain. Without a Nitrokey or the emergency
 passphrase, the disk does not open. The emergency passphrase is stored offline and is
@@ -182,13 +188,14 @@ not present on the machine in any form.
 
 | Component | Status |
 |-----------|--------|
-| LUKS2 with Argon2id | Operational — all three keyslots active |
-| Nitrokey NK#1 FIDO2 enrollment | Operational — firmware 1.8.3, touch-only |
-| Nitrokey NK#2 backup keyslot | Enrolled — stored offline |
-| dracut-sshd remote unlock | Operational — Termux ed25519 key in initramfs |
-| WireGuard wg-SE-RO-1 | Operational — NetworkManager-managed |
-| AdGuard Home | Operational — upstream via 10.2.0.1 |
+| LUKS2 `aes-xts-plain64`/512-bit | Operational — 3 keyslots (Argon2id passphrase + 2× FIDO2) |
+| Nitrokey 3A NFC FIDO2 (primary) | Operational — firmware 1.8.3, touch-only, no clientPin |
+| Nitrokey 3A NFC backup keyslot | Enrolled — stored offline |
+| dracut-sshd remote unlock | Operational — v0.7.1-5.fc44; systemd-networkd + fido2 modules |
+| WireGuard wg-CH-FI-2 / wg-SE-FI-1 | Operational — NetworkManager, manual, full-tunnel |
+| AdGuard Home | Operational — Quad9 DoH upstream, `*:53`, AdGuard DNS filter |
 | systemd-resolved → 127.0.0.1 | Operational |
+| Build platform | Fedora 44, kernel `7.0.11-200.fc44.x86_64` |
 | OpenRGB (Razer + Corsair) | Operational — vendor daemons absent |
 
 <!-- MANUAL INPUT REQUIRED: add LUKS2 unlock-latency benchmark data (hardware key vs passphrase) measured on the running machine -->

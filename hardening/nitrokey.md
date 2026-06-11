@@ -33,8 +33,8 @@ sent to the key.
 # Confirm the device is detected
 nitropy fido2 list                  # or: fido2-token -L
 
-# Enrol NK#1 (inserted), then repeat with NK#2 inserted
-sudo systemd-cryptenroll /dev/sda3 --fido2-device=auto
+# Enrol the primary token (inserted), then repeat with the backup token inserted
+sudo systemd-cryptenroll /dev/disk/by-uuid/6cbc50ba-6f8a-4932-abfc-f2d0504a29b3 --fido2-device=auto
 ```
 
 ## Touch-only constraint

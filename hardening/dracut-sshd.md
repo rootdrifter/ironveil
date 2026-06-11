@@ -1,30 +1,54 @@
 # dracut-sshd — Remote LUKS Unlock over SSH
 
-Living build — `MANUAL INPUT REQUIRED` markers flag values still to be captured from the running machine; `FUTURE WORK` markers flag planned enhancements.
+Living build — hardware values captured from the running machine on 2026-06-11. `FUTURE WORK`
+markers flag planned enhancements.
 
 ## Purpose
 
 `dracut-sshd` starts a minimal SSH daemon inside the initramfs, *before* the LUKS2 volume is
-mounted. This allows the encrypted workstation to be unlocked remotely from the GrapheneOS
-handset (Termux) without ever transmitting the passphrase in cleartext and without physical
-presence at the machine. Tested working.
+mounted. This allows the encrypted workstation to be unlocked remotely — the GrapheneOS handset
+(Termux) reaches the pre-boot listener over the network and triggers the unlock, without ever
+transmitting the passphrase in cleartext and without standing at the machine. The initramfs also
+carries the `fido2` module, so a Nitrokey touch can unlock directly at the prompt. Tested working.
 
 ## Installation
 
-`dracut-sshd` is added to the dracut module set so the initramfs includes a pre-boot SSH
-listener:
+Installed version: **`dracut-sshd-0.7.1-5.fc44.noarch`** (packaged for Fedora 44 — the `.fc44`
+dist tag). The exact origin (official Fedora repo vs the upstream COPR) was not captured in the
+hardware session; confirm with `rpm -qi dracut-sshd` (the *From repo* / *Vendor* fields).
 
 ```
-# Install the dracut-sshd module (Fedora / COPR)
-# MANUAL INPUT REQUIRED: pin the package source (COPR repo) and version used in this build
-#   — run `rpm -q dracut-sshd` and record the COPR repo (e.g. `dnf copr list --enabled`)
-sudo dnf install dracut-sshd
+# Install the dracut-sshd module
+sudo dnf install dracut-sshd          # installed: dracut-sshd-0.7.1-5.fc44.noarch
 
 # Rebuild the initramfs to embed the SSH daemon and authorized key
 sudo dracut -f --regenerate-all
 ```
 
-<!-- MANUAL INPUT REQUIRED: document the dracut config drop-in and network setup — `cat /etc/dracut.conf.d/*.conf` (the sshd/network module config) and `cat /proc/cmdline` (the `ip=` directive and network module on the running kernel) -->
+## Dracut configuration
+
+The initramfs is built with pre-boot networking (`systemd-networkd`), the `fido2` unlock module,
+and `dracut-sshd`. The relevant `/etc/dracut.conf.d/*.conf` drop-in:
+
+```
+add_dracutmodules+=" systemd-networkd "
+install_items+=" /etc/systemd/network/20-dracut-wired.network "
+kernel_cmdline="rd.neednet=1"
+add_dracutmodules+=" fido2 "
+```
+
+The running kernel command line (`/proc/cmdline`) — note `rd.neednet=1` forces the network up in
+the initramfs, and the LUKS volume is referenced by UUID (there is no legacy `ip=` directive;
+addressing is declarative via the embedded `20-dracut-wired.network`):
+
+```
+BOOT_IMAGE=(hd1,gpt2)/vmlinuz-7.0.11-200.fc44.x86_64 root=UUID=c1171ebd-167a-4ed7-a7c0-5b63d2e1b007 ro rootflags=subvol=root rd.luks.uuid=luks-6cbc50ba-6f8a-4932-abfc-f2d0504a29b3 rhgb quiet
+```
+
+- **`fido2` module present** → FIDO2 unlock is active *in the initramfs*, not only post-boot: a
+  Nitrokey touch satisfies the LUKS prompt directly.
+- **`systemd-networkd` + `20-dracut-wired.network`** → wired networking is configured before the
+  root volume mounts, which is what makes the dracut-sshd remote-unlock path reachable.
 
 ## Key material
 
@@ -37,17 +61,25 @@ sudo dracut -f --regenerate-all
 
 ## Unlock flow
 
-1. The workstation powers on and reaches the initramfs SSH listener (pre-mount).
-2. From GrapheneOS Termux: `ssh unlock@$IRONVEIL_IP`.
-3. The connection authenticates against the embedded ed25519 public key.
-4. Inside the session, the password agent is signalled to supply the LUKS2 passphrase over the
-   encrypted channel:
+1. The workstation powers on; `systemd-networkd` brings up the wired interface (`rd.neednet=1`)
+   and reaches the initramfs SSH listener (pre-mount), pausing at the LUKS prompt.
+2. The GrapheneOS handset (Termux) connects to the pre-boot listener **over Tailscale**. Tailscale
+   itself does not run in the initramfs — the modules are `systemd-networkd` + `fido2` +
+   `dracut-sshd`; reachability comes from the LAN the pre-boot interface sits on being exposed over
+   the tailnet (subnet router / same-network client).
+3. The connection authenticates against the embedded ed25519 public key (host key pinned on the
+   client to prevent MITM substitution).
+4. Inside the session, the password agent is signalled to drive the LUKS2 unlock over the encrypted
+   channel:
 
    ```
    systemd-tty-ask-password-agent
    ```
 
-5. The LUKS2 volume unlocks and boot continues into userspace.
+5. A Nitrokey 3A NFC present at the machine is **touched** (the initramfs `fido2` module handles
+   the FIDO2 unlock); the LUKS2 volume unlocks and boot continues into userspace. The two-factor
+   property holds: remote network access (Tailscale + pinned ed25519 key) **and** physical presence
+   (the touch on the hardware token).
 
 ## Security properties
 
@@ -65,9 +97,27 @@ complete the unlock.
 
 | Item | Status |
 |------|--------|
-| dracut-sshd in initramfs | Operational |
+| dracut-sshd in initramfs (v0.7.1-5.fc44) | Operational |
+| `systemd-networkd` + `fido2` initramfs modules | Operational |
 | Termux ed25519 key embedded | Operational |
 | Remote unlock via `systemd-tty-ask-password-agent` | Tested working |
 | Host-key pinning on client | Operational |
 
-<!-- MANUAL INPUT REQUIRED: document the initramfs rebuild trigger and the ed25519 key-rotation procedure (generate new key in Termux → update authorized_keys → `sudo dracut -f --regenerate-all` → re-pin host key on the client); cross-reference the nullbyte Termux SSH integration -->
+## Key rotation & initramfs rebuild
+
+The initramfs is rebuilt whenever the embedded authorized key changes. To rotate the unlock key:
+
+```
+# 1. On the GrapheneOS handset (Termux): generate a fresh key pair
+ssh-keygen -t ed25519 -f ~/.ssh/ironveil_unlock
+
+# 2. On the workstation: replace the public key dracut-sshd embeds, then rebuild the initramfs
+#    (dracut-sshd reads root's authorized_keys / its configured key path at build time)
+sudo dracut -f --regenerate-all
+
+# 3. On the handset: re-pin the new initramfs SSH host key on first connect (verify the
+#    fingerprint out-of-band before trusting it)
+```
+
+Cross-reference: the handset side of this key custody is the nullbyte **Façade**-profile Termux
+SSH integration (the unlock private key lives only in that profile).

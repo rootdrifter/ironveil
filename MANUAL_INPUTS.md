@@ -113,11 +113,28 @@ Plus a DNS-leak test result (date + service used) for the **line-79** placeholde
 
 ---
 
-## Resolution checklist
-- [ ] crypttab line pasted → luks2-setup.md:68 updated, marker removed
-- [ ] luksDump cipher/keysize → luks2-setup.md:12 updated
-- [ ] dracut drop-in + cmdline → dracut-sshd.md:27 updated; package source → dracut-sshd.md:19
-- [ ] WireGuard excerpt (secrets redacted) → network-stack.md §WireGuard; kill-switch → :49
-- [ ] AdGuard upstream + blocklists → network-stack.md :27 / :20
-- [ ] DNS-leak result → network-stack.md:79; Fedora/kernel → luks2-setup.md:88
-- [ ] Re-run the privacy / handle-typo scan, commit per the standing convention, push.
+## Resolution checklist — RESOLVED 2026-06-11 (operator hardware session)
+- [x] crypttab line pasted → luks2-setup.md updated, marker removed (UUID `6cbc50ba-…`, `discard,x-initrd.attach,fido2-device=auto`)
+- [x] luksDump cipher/keysize → luks2-setup.md updated (aes-xts-plain64, 512-bit, 3 keyslots: Argon2id + 2× PBKDF2/SHA-512 FIDO2)
+- [x] dracut drop-in + cmdline → dracut-sshd.md updated (systemd-networkd + fido2 modules, rd.neednet=1); package version → `dracut-sshd-0.7.1-5.fc44.noarch` (repo source still to confirm via `rpm -qi`)
+- [x] WireGuard excerpt (secrets redacted) → network-stack.md §WireGuard; kill-switch documented honestly as route-based/implicit (no fail-closed rule)
+- [x] AdGuard upstream + blocklists → network-stack.md (Quad9 DoH upstream, AdGuard DNS filter, `*:53`)
+- [x] DNS-leak result → network-stack.md (2026-06-11, via `wg-CH-FI-2`); Fedora/kernel → luks2-setup.md (Fedora 44, 7.0.11-200.fc44)
+- [x] Privacy / handle-typo scan re-run, committed + pushed per the standing convention
+
+### Corrections discovered this session (the docs were wrong, the hardware is ground truth)
+- **Tunnel names:** the documented `wg-SE-RO-1` does not exist. Real tunnels: `wg-CH-FI-2` and
+  `wg-SE-FI-1`. Fixed across hardening/, README.md, docs/index.html, and the research reference.
+- **DNS upstream:** the documented `10.2.0.1` is the VPN provider's pushed DNS, **overridden** by
+  AdGuard's real upstream **Quad9 DoH** (`https://dns10.quad9.net/dns-query`).
+- **AdGuard listener:** real bind is `*:53` (all interfaces, pid 1452), not loopback-only — the
+  no-plaintext-egress property rests on the DoH-over-tunnel upstream, documented honestly.
+- **Kill-switch:** route-based (full-tunnel `AllowedIPs`), not a fail-closed rule; tunnels are
+  `autoconnect=false` (manual). Flagged a hard kill-switch as FUTURE WORK.
+
+### Still pending (no value provided this session)
+- LUKS2 unlock-latency benchmark (hardware-key vs passphrase).
+- SELinux/seccomp status (`getenforce` / `sestatus`).
+- LUKS2 verified-boot hash + Fedora Secure Boot state (`mokutil --sb-state`).
+- OpenRGB profile name + udev rule path (README.md OpenRGB markers).
+- dracut-sshd package origin (official Fedora vs COPR) via `rpm -qi dracut-sshd`.
