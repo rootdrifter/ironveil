@@ -41,6 +41,11 @@ eliminates a specific attack path — not because it adds capability.
 | DNS traffic leakage and exfiltration | AdGuard Home filtering; systemd-resolved bound to loopback |
 | Traffic interception and geolocation | WireGuard VPN on all external traffic |
 
+A full **[threat model](threat-model.md)** takes this further: a defined adversary set, an explicit
+asset inventory, and per-vector analysis (vector → control → residual risk → honest gap), including
+the model's weakest edges — the evil-maid / measured-boot gap, the cold-boot class, and the
+route-based kill-switch — stated rather than hidden.
+
 ---
 
 ## Components
