@@ -59,7 +59,7 @@ repo and the installed `dracut-sshd` version (`rpm -q dracut-sshd` / `dnf info d
 ---
 
 ### 3. WireGuard config excerpt (sanitised)
-**What this enables:** substantiates the named-tunnel (`wg-SE-RO-1`) and kill-switch claims with real,
+**What this enables:** substantiates the named-tunnel (`wg-CH-FI-2`/`wg-SE-FI-1`) and kill-switch claims with real,
 secret-redacted config — showing egress is genuinely tunnel-bound rather than asserted. **Expected
 format:** `[Interface]`/`[Peer]` sections with `Endpoint`, `AllowedIPs`, interface name; `PrivateKey`
 and `PresharedKey` shown as `[REDACTED]`; plus the dispatcher/nftables kill-switch rule.
@@ -69,15 +69,15 @@ Run on war-horse:
 sudo cat /etc/NetworkManager/system-connections/wg-*.nmconnection
 ```
 Remove: `PrivateKey`, `PresharedKey` values (replace each with `[REDACTED]`).
-Keep: `[interface]` / `[peer]` sections, `Endpoint`, `AllowedIPs`, interface name `wg-SE-RO-1`.
+Keep: `[interface]` / `[peer]` sections, `Endpoint`, `AllowedIPs`, interface names `wg-CH-FI-2`/`wg-SE-FI-1`.
 Paste sanitised excerpt below:
 ```
 [PASTE HERE]
 ```
-Update: `hardening/network-stack.md` — **WireGuard — wg-SE-RO-1** section (**line 31** onward).
+Update: `hardening/network-stack.md` — **WireGuard — wg-CH-FI-2/wg-SE-FI-1** section (**line 31** onward).
 Also document the kill-switch actually in use (resolves the line-49 placeholder): the
 NetworkManager dispatcher script (`/etc/NetworkManager/dispatcher.d/`) or the nftables/firewalld
-egress rule that drops traffic when `wg-SE-RO-1` is down.
+egress rule that drops traffic when a tunnel (`wg-CH-FI-2`/`wg-SE-FI-1`) is down.
 
 > Path note: the template's `network/wireguard.md` does not exist in this repo — WireGuard lives in
 > `hardening/network-stack.md`. Use that file.
@@ -124,7 +124,8 @@ Plus a DNS-leak test result (date + service used) for the **line-79** placeholde
 
 ### Corrections discovered this session (the docs were wrong, the hardware is ground truth)
 - **Tunnel names:** the documented `wg-SE-RO-1` does not exist. Real tunnels: `wg-CH-FI-2` and
-  `wg-SE-FI-1`. Fixed across hardening/, README.md, docs/index.html, and the research reference.
+  `wg-SE-FI-1`. Fixed across hardening/, README.md, docs/index.html, the research reference, and
+  this worksheet's §3 (the last remaining stale reference, corrected 2026-06-19).
 - **DNS upstream:** the documented `10.2.0.1` is the VPN provider's pushed DNS, **overridden** by
   AdGuard's real upstream **Quad9 DoH** (`https://dns10.quad9.net/dns-query`).
 - **AdGuard listener:** real bind is `*:53` (all interfaces, pid 1452), not loopback-only — the
