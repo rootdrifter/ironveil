@@ -36,7 +36,7 @@ eliminates a specific attack path — not because it adds capability.
 |--------|---------|
 | Offline disk clone and brute-force | LUKS2 with Argon2id KDF; hardware key required to unlock |
 | Primary hardware key lost or seized | NK#2 backup keyslot; passphrase emergency fallback |
-| Hardware key cloned without touch interaction | Touch-only FIDO2 enrollment; Nitrokey 3A NFC requires physical presence |
+| Hardware key cloned without touch interaction | Touch-only FIDO2 enrolment; Nitrokey 3A NFC requires physical presence |
 | Remote workstation inaccessible for unlock | dracut-sshd: SSH into initramfs from GrapheneOS |
 | DNS traffic leakage and exfiltration | AdGuard Home filtering; systemd-resolved bound to loopback |
 | Traffic interception and geolocation | WireGuard VPN on all external traffic |
@@ -67,11 +67,11 @@ LUKS2 uses Argon2id as the key derivation function. The hardware key slots enrol
 credentials — the LUKS2 passphrase is never sent to the key; the key produces a credential
 that is combined with a stored key file to derive the slot key.
 
-### Nitrokey 3A NFC FIDO2 Hardware Key Enrollment
+### Nitrokey 3A NFC FIDO2 Hardware Key Enrolment
 
 - **Hardware:** Nitrokey 3A NFC
 - **Firmware:** 1.8.3
-- **Enrollment mode:** Touch-only — physical presence required for every unlock event
+- **Enrolment mode:** Touch-only — physical presence required for every unlock event
 - **clientPin:** Not supported on this firmware version; reliance is on touch confirmation
   rather than PIN-gated credentials
 - **FIDO2 resident keys:** Used for workstation unlock; not shared with web authentication flows
@@ -173,7 +173,7 @@ DNS layer:        AdGuard + systemd-resolved — no plaintext queries
 
 | Layer | Mechanism | Threat mitigated |
 |-------|-----------|------------------|
-| Physical | Nitrokey 3A NFC FIDO2, touch-only enrollment (firmware 1.8.3, no clientPin) | Remote/unattended hardware-key activation; unlock without physical presence |
+| Physical | Nitrokey 3A NFC FIDO2, touch-only enrolment (firmware 1.8.3, no clientPin) | Remote/unattended hardware-key activation; unlock without physical presence |
 | Disk | LUKS2 `aes-xts-plain64`/512-bit (UUID `6cbc50ba-…`) with Argon2id passphrase slot | Offline disk clone and brute-force key derivation |
 | Boot | dracut-sshd pre-boot SSH with pinned ed25519 host key | Unattended unlock without exposing the passphrase; MITM key substitution during unlock |
 | Key custody | Primary Nitrokey slot, backup Nitrokey offline slot, offline emergency passphrase | Single point of key failure; primary key loss or seizure |

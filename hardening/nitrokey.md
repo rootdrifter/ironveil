@@ -23,9 +23,9 @@ Two physical keys are enrolled against the LUKS2 volume (see
 A separate offline emergency passphrase (slot 0) guarantees recovery even if both keys are
 unavailable.
 
-## FIDO2 LUKS enrollment
+## FIDO2 LUKS enrolment
 
-Enrollment uses `systemd-cryptenroll --fido2-device=auto`. The Nitrokey produces a FIDO2
+Enrolment uses `systemd-cryptenroll --fido2-device=auto`. The Nitrokey produces a FIDO2
 credential combined with a stored key file to derive the slot key; the LUKS2 passphrase is never
 sent to the key.
 

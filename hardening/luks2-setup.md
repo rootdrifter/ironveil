@@ -43,7 +43,7 @@ Inspect the header with:
 sudo cryptsetup luksDump /dev/disk/by-uuid/6cbc50ba-6f8a-4932-abfc-f2d0504a29b3
 ```
 
-## FIDO2 enrollment
+## FIDO2 enrolment
 
 The hardware keyslots are enrolled with `systemd-cryptenroll` using FIDO2. The LUKS2 passphrase
 is never transmitted to the key; the Nitrokey produces a FIDO2 credential combined with a stored
@@ -57,7 +57,7 @@ sudo systemd-cryptenroll /dev/disk/by-uuid/6cbc50ba-6f8a-4932-abfc-f2d0504a29b3 
 sudo systemd-cryptenroll /dev/disk/by-uuid/6cbc50ba-6f8a-4932-abfc-f2d0504a29b3 --fido2-device=auto
 ```
 
-**Touch-only enrollment:** the Nitrokey 3A NFC on firmware 1.8.3 does **not** support
+**Touch-only enrolment:** the Nitrokey 3A NFC on firmware 1.8.3 does **not** support
 `clientPin`. Both tokens are therefore enrolled with `fido2-clientPin-required=false` and
 `fido2-up-required=true` — a physical touch is mandatory for every unlock, but no PIN is involved.
 This is intentional — a PIN-over-USB credential could be activated without physical presence,
@@ -112,4 +112,4 @@ lsblk -f                                                                        
 
 > **Note on the FIDO2 credential:** the per-token credential IDs reported by `luksDump` are hardware
 > attestation data and are intentionally **not** reproduced here — only the token count (2) and the
-> enrollment policy (touch-required, no clientPin) are documented.
+> enrolment policy (touch-required, no clientPin) are documented.
