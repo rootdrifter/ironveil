@@ -63,7 +63,7 @@ Three keyslots configured:
 | 1 | Nitrokey NK#1 (primary) | Daily driver — touch required for unlock |
 | 2 | Nitrokey NK#2 (backup) | Kept offline; activated only if NK#1 is lost |
 
-LUKS2 uses Argon2id as the key derivation function. The hardware key slots enroll FIDO2
+LUKS2 uses Argon2id as the key derivation function. The hardware key slots enrol FIDO2
 credentials — the LUKS2 passphrase is never sent to the key; the key produces a credential
 that is combined with a stored key file to derive the slot key.
 
@@ -167,7 +167,7 @@ layer:
 Physical layer:   Nitrokey touch-only FIDO2 — presence required
 Disk layer:       LUKS2 Argon2id — offline brute-force impractical
 Boot layer:       dracut-sshd — remote unlock without exposing passphrase
-Network layer:    WireGuard — encrypted egress; kill-switch on drop
+Network layer:    WireGuard — encrypted egress; route-based kill-switch (full-tunnel)
 DNS layer:        AdGuard + systemd-resolved — no plaintext queries
 ```
 
