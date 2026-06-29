@@ -51,14 +51,14 @@ Two WireGuard tunnels are configured (NetworkManager connections). Both carry th
 
 | Attribute | wg-CH-FI-2 | wg-SE-FI-1 |
 |-----------|------------|------------|
-| Endpoint | `79.135.104.69:51820` | `185.159.156.27:51820` |
+| Endpoint | `[REDACTED]:51820` | `[REDACTED]:51820` |
 | Interface address | `10.2.0.2/32` | `10.2.0.2/32` |
 | AllowedIPs | `0.0.0.0/0, ::/0` (full tunnel) | `0.0.0.0/0, ::/0` (full tunnel) |
 | Persistent keepalive | 25 s | 25 s |
 | Provider DNS (pushed, overridden) | `10.2.0.1` | `10.2.0.1` |
 | Activation | manual (`autoconnect=false`) | manual (`autoconnect=false`) |
 
-Sanitised NetworkManager config (private keys redacted — never committed):
+Sanitised NetworkManager config (private keys and provider endpoint IPs redacted — never committed):
 
 ```ini
 [connection]
@@ -71,7 +71,7 @@ listen-port=51820
 private-key=[REDACTED]
 
 [wireguard-peer]
-endpoint=79.135.104.69:51820
+endpoint=[REDACTED]:51820
 persistent-keepalive=25
 allowed-ips=0.0.0.0/0;::/0;
 
@@ -92,7 +92,7 @@ listen-port=51820
 private-key=[REDACTED]
 
 [wireguard-peer]
-endpoint=185.159.156.27:51820
+endpoint=[REDACTED]:51820
 persistent-keepalive=25
 allowed-ips=0.0.0.0/0;::/0;
 
